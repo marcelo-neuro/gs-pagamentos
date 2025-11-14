@@ -8,22 +8,95 @@ function tipoCartaoLabel(tipo){
   return t === 'CREDITO' ? 'Crédito' : t === 'DEBITO' ? 'Débito' : 'Outro'
 }
 
-function LoginScreen({ onLogin, error }){
-  const [username, setUsername] = useState('')
+function LoginScreen({ onLogin, onSwitchToRegister, error }){
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   return (
     <div className="page center">
       <div className="card login-card">
-        <h2>Entrar</h2>
+        <h2>SmartSector</h2>
+        <p style={{ color: '#666', marginBottom: 20, fontSize: 14 }}>Sistema de Análise Inteligente por Setor</p>
         {error && <div className="alert error">{error}</div>}
         <div className="form-row">
-          <input placeholder="Usuário" value={username} onChange={e=>setUsername(e.target.value)} />
+          <input placeholder="Email" type="email" value={email} onChange={e=>setEmail(e.target.value)} />
         </div>
         <div className="form-row">
           <input placeholder="Senha" type="password" value={password} onChange={e=>setPassword(e.target.value)} />
         </div>
         <div className="form-row">
-          <button onClick={()=>onLogin(username, password)}>Entrar</button>
+          <button onClick={()=>onLogin(email, password)}>Entrar</button>
+        </div>
+        <div style={{ textAlign: 'center', marginTop: 16 }}>
+          <span style={{ color: '#666', fontSize: 14 }}>Não tem uma conta? </span>
+          <a href="#" onClick={(e)=>{ e.preventDefault(); onSwitchToRegister(); }} style={{ color: '#667eea', fontWeight: 600, textDecoration: 'none' }}>Cadastre-se</a>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function RegisterScreen({ onRegister, onSwitchToLogin, error }){
+  const [nome, setNome] = useState('')
+  const [email, setEmail] = useState('')
+  const [senha, setSenha] = useState('')
+  const [confirmarSenha, setConfirmarSenha] = useState('')
+  const [empresa, setEmpresa] = useState('')
+  const [setor, setSetor] = useState('')
+  
+  const setoresDisponiveis = [
+    'Jurídico', 'Financeiro', 'Recursos Humanos (RH)', 'Tecnologia da Informação (TI)',
+    'Comercial', 'Marketing', 'Operações', 'Administrativo', 'Contabilidade', 'Compliance', 'Outro'
+  ]
+
+  const handleRegister = () => {
+    if(!nome || !email || !senha || !empresa || !setor){
+      alert('Por favor, preencha todos os campos')
+      return
+    }
+    if(senha !== confirmarSenha){
+      alert('As senhas não coincidem')
+      return
+    }
+    if(senha.length < 6){
+      alert('A senha deve ter no mínimo 6 caracteres')
+      return
+    }
+    onRegister({ nome, email, senha, empresa, setor })
+  }
+
+  return (
+    <div className="page center">
+      <div className="card login-card" style={{ maxWidth: 500 }}>
+        <h2>SmartSector</h2>
+        <p style={{ color: '#666', marginBottom: 20, fontSize: 14 }}>Crie sua conta e comece a analisar seus dados</p>
+        {error && <div className="alert error">{error}</div>}
+        <div className="form-row">
+          <input placeholder="Nome Completo" value={nome} onChange={e=>setNome(e.target.value)} />
+        </div>
+        <div className="form-row">
+          <input placeholder="Email" type="email" value={email} onChange={e=>setEmail(e.target.value)} />
+        </div>
+        <div className="form-row">
+          <input placeholder="Empresa" value={empresa} onChange={e=>setEmpresa(e.target.value)} />
+        </div>
+        <div className="form-row">
+          <select value={setor} onChange={e=>setSetor(e.target.value)} style={{ padding: '12px 16px', fontSize: 14 }}>
+            <option value="">Selecione seu setor</option>
+            {setoresDisponiveis.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+        <div className="form-row">
+          <input placeholder="Senha (mínimo 6 caracteres)" type="password" value={senha} onChange={e=>setSenha(e.target.value)} />
+        </div>
+        <div className="form-row">
+          <input placeholder="Confirmar Senha" type="password" value={confirmarSenha} onChange={e=>setConfirmarSenha(e.target.value)} />
+        </div>
+        <div className="form-row">
+          <button onClick={handleRegister}>Criar Conta</button>
+        </div>
+        <div style={{ textAlign: 'center', marginTop: 16 }}>
+          <span style={{ color: '#666', fontSize: 14 }}>Já tem uma conta? </span>
+          <a href="#" onClick={(e)=>{ e.preventDefault(); onSwitchToLogin(); }} style={{ color: '#667eea', fontWeight: 600, textDecoration: 'none' }}>Entrar</a>
         </div>
       </div>
     </div>
@@ -32,11 +105,18 @@ function LoginScreen({ onLogin, error }){
 
 function PaymentsScreen(props){
   const { pagamentos, clientes, cartoes, message, onLogout, onEdit, onDelete, onSave, form, setForm, loading, editingId, onCancelEdit,
-    indicadores, setIndicadores, onGetTicket, onGetDescricao, onRegistrarAlertas, onListarAlertas, onGetRelatorio, apiOffline, onRetry } = props
+    indicadores, setIndicadores, onGetTicket, onGetDescricao, onRegistrarAlertas, onListarAlertas, onGetRelatorio, apiOffline, onRetry,
+    onSaveCliente, onSaveCartao } = props
 
   // Substitui o toggle por uma aba abaixo
-  const [activeTab, setActiveTab] = useState('none') // 'none' | 'indicadores'
+  const [activeTab, setActiveTab] = useState('none') // 'none' | 'indicadores' | 'clientes' | 'cartoes'
   const indicadoresRef = useRef(null)
+
+  // Estados para cadastro de cliente
+  const [clienteForm, setClienteForm] = useState({ nome: '', email: '', telefone: '' })
+
+  // Estados para cadastro de cartão
+  const [cartaoForm, setCartaoForm] = useState({ numero: '', cvv: '', tipoCartao: '', vencimento: '', clienteId: '' })
 
   const clienteMap = useMemo(()=>Object.fromEntries((clientes||[]).map(c=>[c.id, c])), [clientes])
   const cartaoMap = useMemo(()=>Object.fromEntries((cartoes||[]).map(c=>[c.id, c])), [cartoes])
@@ -53,6 +133,24 @@ function PaymentsScreen(props){
       indicadoresRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
   }, [activeTab])
+
+  const handleSaveCliente = () => {
+    if(!clienteForm.nome || !clienteForm.email || !clienteForm.telefone){
+      alert('Preencha todos os campos do cliente')
+      return
+    }
+    onSaveCliente(clienteForm)
+    setClienteForm({ nome: '', email: '', telefone: '' })
+  }
+
+  const handleSaveCartao = () => {
+    if(!cartaoForm.numero || !cartaoForm.cvv || !cartaoForm.tipoCartao || !cartaoForm.vencimento || !cartaoForm.clienteId){
+      alert('Preencha todos os campos do cartão')
+      return
+    }
+    onSaveCartao(cartaoForm)
+    setCartaoForm({ numero: '', cvv: '', tipoCartao: '', vencimento: '', clienteId: '' })
+  }
 
   return (
     <div className="page">
@@ -141,6 +239,34 @@ function PaymentsScreen(props){
       <div className="tabs" style={{ margin: '16px' }}>
         <div className="tab-bar" style={{ display: 'flex', gap: 8, borderBottom: '1px solid #eee', paddingBottom: 8 }}>
           <button
+            className={activeTab === 'clientes' ? 'tab active' : 'tab'}
+            style={{ 
+              padding: '8px 12px', 
+              borderRadius: 6, 
+              border: '1px solid #ddd', 
+              background: activeTab === 'clientes' ? '#28a745' : '#fff',
+              color: activeTab === 'clientes' ? '#fff' : '#333',
+              cursor: 'pointer'
+            }}
+            onClick={() => setActiveTab(activeTab === 'clientes' ? 'none' : 'clientes')}
+          >
+            ➕ Novo Cliente
+          </button>
+          <button
+            className={activeTab === 'cartoes' ? 'tab active' : 'tab'}
+            style={{ 
+              padding: '8px 12px', 
+              borderRadius: 6, 
+              border: '1px solid #ddd', 
+              background: activeTab === 'cartoes' ? '#17a2b8' : '#fff',
+              color: activeTab === 'cartoes' ? '#fff' : '#333',
+              cursor: 'pointer'
+            }}
+            onClick={() => setActiveTab(activeTab === 'cartoes' ? 'none' : 'cartoes')}
+          >
+            💳 Novo Cartão
+          </button>
+          <button
             className={activeTab === 'indicadores' ? 'tab active' : 'tab'}
             style={{ 
               padding: '8px 12px', 
@@ -152,9 +278,114 @@ function PaymentsScreen(props){
             }}
             onClick={() => setActiveTab(activeTab === 'indicadores' ? 'none' : 'indicadores')}
           >
-            Indicadores
+            📊 Indicadores
           </button>
         </div>
+
+          {activeTab === 'clientes' && (
+            <section className="panel" style={{ marginTop: 16 }}>
+              <h3>Cadastrar Novo Cliente</h3>
+              <div className="form">
+                <input 
+                  placeholder="Nome completo" 
+                  value={clienteForm.nome} 
+                  onChange={e=>setClienteForm({...clienteForm, nome: e.target.value})} 
+                />
+                <input 
+                  placeholder="Email" 
+                  type="email"
+                  value={clienteForm.email} 
+                  onChange={e=>setClienteForm({...clienteForm, email: e.target.value})} 
+                />
+                <input 
+                  placeholder="Telefone (ex: 11999999999)" 
+                  value={clienteForm.telefone} 
+                  onChange={e=>setClienteForm({...clienteForm, telefone: e.target.value})} 
+                />
+                <button onClick={handleSaveCliente} style={{ background: '#28a745' }}>
+                  Cadastrar Cliente
+                </button>
+              </div>
+              
+              <h4 style={{ marginTop: 24 }}>Clientes Cadastrados</h4>
+              <ul className="list">
+                {clientes.map(c => (
+                  <li className="item" key={c.id}>
+                    <div>
+                      <strong>{c.nome}</strong>
+                      <div className="meta">{c.email} • {c.telefone}</div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {activeTab === 'cartoes' && (
+            <section className="panel" style={{ marginTop: 16 }}>
+              <h3>Cadastrar Novo Cartão</h3>
+              <div className="form">
+                <select 
+                  value={cartaoForm.clienteId || ''} 
+                  onChange={e=>setCartaoForm({...cartaoForm, clienteId: e.target.value})}
+                >
+                  <option value="">Selecione o cliente dono do cartão</option>
+                  {clientes.map(c => (
+                    <option key={c.id} value={c.id}>{c.nome} (#{c.id})</option>
+                  ))}
+                </select>
+                <input 
+                  placeholder="Número do cartão (16 dígitos)" 
+                  value={cartaoForm.numero} 
+                  maxLength={16}
+                  onChange={e=>setCartaoForm({...cartaoForm, numero: e.target.value.replace(/\D/g, '')})} 
+                />
+                <input 
+                  placeholder="CVV (3 dígitos)" 
+                  value={cartaoForm.cvv} 
+                  maxLength={3}
+                  onChange={e=>setCartaoForm({...cartaoForm, cvv: e.target.value.replace(/\D/g, '')})} 
+                />
+                <select 
+                  value={cartaoForm.tipoCartao || ''} 
+                  onChange={e=>setCartaoForm({...cartaoForm, tipoCartao: e.target.value})}
+                >
+                  <option value="">Selecione o tipo de cartão</option>
+                  <option value="CREDITO">Crédito</option>
+                  <option value="DEBITO">Débito</option>
+                </select>
+                <div>
+                  <label style={{ fontSize: 12, color: '#666' }}>Data de vencimento</label>
+                  <input 
+                    type="date"
+                    value={cartaoForm.vencimento} 
+                    onChange={e=>setCartaoForm({...cartaoForm, vencimento: e.target.value})} 
+                  />
+                </div>
+                <button onClick={handleSaveCartao} style={{ background: '#17a2b8' }}>
+                  Cadastrar Cartão
+                </button>
+              </div>
+              
+              <h4 style={{ marginTop: 24 }}>Cartões Cadastrados</h4>
+              <ul className="list">
+                {cartoes.map(c => {
+                  const cliente = clienteMap[c.clienteId]
+                  return (
+                    <li className="item" key={c.id}>
+                      <div>
+                        <strong>****{c.numero?.slice(-4)}</strong>
+                        <div className="meta">
+                          {tipoCartaoLabel(c.tipoCartao)} • CVV: {c.cvv} • Validade: {c.vencimento}
+                          {cliente && ` • ${cliente.nome}`}
+                        </div>
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+            </section>
+          )}
 
           {activeTab === 'indicadores' && (
             <section className="panel" id="indicadores" ref={indicadoresRef}>
@@ -273,17 +504,26 @@ export default function App(){
   const [form, setForm] = useState({ valor: '', descricao: '', transactionDate: '', clienteId: '', cartaoId: '' })
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState(null)
-  const [authHeader, setAuthHeader] = useState(null)
+  const [authToken, setAuthToken] = useState(localStorage.getItem('token'))
+  const [usuario, setUsuario] = useState(JSON.parse(localStorage.getItem('usuario') || 'null'))
   const [editingId, setEditingId] = useState(null)
   const [indicadores, setIndicadores] = useState({ tmClienteId: '', tmValor: null, descId: '', descTexto: '', limite: '', alertas: [], relClienteId: '', relatorio: [] })
   const [apiOffline, setApiOffline] = useState(false)
+  const [screen, setScreen] = useState('login') // 'login' | 'register'
+  const [dataLoaded, setDataLoaded] = useState(false)
 
-  useEffect(()=>{ fetchInitial() }, [])
+  useEffect(()=>{ 
+    if(authToken && !dataLoaded) {
+      fetchInitial()
+      setDataLoaded(true)
+    }
+  }, [authToken, dataLoaded])
 
   async function fetchInitial(){
     // Buscar pagamentos primeiro (sempre exibir a lista mesmo que clientes/cartoes falhem)
     try{
-      const pRes = await fetch(`${API_BASE}/pagamentos`)
+      const pRes = await fetch(`${API_BASE}/pagamentos`, { headers: headers() })
+      if(!pRes.ok) throw new Error('Erro ao buscar pagamentos')
       const p = await pRes.json()
       setPagamentos(p)
       setApiOffline(false)
@@ -291,7 +531,7 @@ export default function App(){
 
     // Buscar clientes e cartões de forma independente
     try{
-      const cRes = await fetch(`${API_BASE}/clientes`)
+      const cRes = await fetch(`${API_BASE}/clientes`, { headers: headers() })
       if(cRes.ok){
         const c = await cRes.json(); setClientes(c)
       } else {
@@ -300,7 +540,7 @@ export default function App(){
     }catch(e){ console.warn('CORS/erro em clientes', e) }
 
     try{
-      const kRes = await fetch(`${API_BASE}/cartoes`)
+      const kRes = await fetch(`${API_BASE}/cartoes`, { headers: headers() })
       if(kRes.ok){
         const k = await kRes.json(); setCartoes(k)
       } else {
@@ -311,7 +551,7 @@ export default function App(){
 
   async function fetchList(){
     try{
-      const res = await fetch(`${API_BASE}/pagamentos`)
+      const res = await fetch(`${API_BASE}/pagamentos`, { headers: headers() })
       const data = await res.json()
       setPagamentos(data)
     }catch(e){ console.error('Erro fetch', e); setMessage({ type:'error', text: 'Erro ao buscar pagamentos' }) }
@@ -319,27 +559,105 @@ export default function App(){
 
   function headers(){
     const h = { 'Content-Type': 'application/json' }
-    if(authHeader) h['Authorization'] = authHeader
+    if(authToken) h['Authorization'] = `Bearer ${authToken}`
     return h
   }
 
-  function doLogin(username, password){
-    if(!username || !password){ setMessage({ type:'error', text: 'Informe usuário e senha' }); return }
-    const token = btoa(`${username}:${password}`)
-    const header = 'Basic ' + token
-    fetch(`${API_BASE}/auth/validate`, { method: 'GET', headers: { 'Authorization': header } })
-      .then(res => {
-        if(res.ok){
-          setAuthHeader(header)
-          setMessage({ type:'success', text: 'Logado com sucesso' })
-        }else{
-          setMessage({ type:'error', text: 'Credenciais inválidas' })
-        }
+  async function doLogin(email, senha){
+    if(!email || !senha){ setMessage({ type:'error', text: 'Informe email e senha' }); return }
+    
+    try {
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, senha })
       })
-      .catch(err => { console.error('Erro validar auth', err); setMessage({ type:'error', text: 'Erro ao validar credenciais' }) })
+
+      if(res.ok){
+        const data = await res.json()
+        localStorage.setItem('token', data.token)
+        localStorage.setItem('usuario', JSON.stringify({
+          usuarioId: data.usuarioId,
+          nome: data.nome,
+          email: data.email,
+          empresa: data.empresa,
+          setor: data.setor
+        }))
+        setAuthToken(data.token)
+        setUsuario({
+          usuarioId: data.usuarioId,
+          nome: data.nome,
+          email: data.email,
+          empresa: data.empresa,
+          setor: data.setor
+        })
+        setMessage({ type:'success', text: 'Login realizado com sucesso!' })
+      } else {
+        const error = await res.json().catch(() => ({}))
+        setMessage({ type:'error', text: error.message || 'Email ou senha inválidos' })
+      }
+    } catch(err) { 
+      console.error('Erro ao fazer login', err)
+      setMessage({ type:'error', text: 'Erro ao conectar com o servidor' })
+    }
   }
 
-  function doLogout(){ setAuthHeader(null); setMessage({ type:'success', text: 'Logout realizado' }) }
+  async function doRegister(dados){
+    console.log('Tentando registrar:', dados)
+    try {
+      const res = await fetch(`${API_BASE}/auth/registro`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dados)
+      })
+
+      console.log('Resposta do servidor:', res.status, res.statusText)
+
+      if(res.ok){
+        const data = await res.json()
+        console.log('Dados recebidos:', data)
+        localStorage.setItem('token', data.token)
+        localStorage.setItem('usuario', JSON.stringify({
+          usuarioId: data.usuarioId,
+          nome: data.nome,
+          email: data.email,
+          empresa: data.empresa,
+          setor: data.setor
+        }))
+        setAuthToken(data.token)
+        setUsuario({
+          usuarioId: data.usuarioId,
+          nome: data.nome,
+          email: data.email,
+          empresa: data.empresa,
+          setor: data.setor
+        })
+        setMessage({ type:'success', text: 'Conta criada com sucesso!' })
+        setDataLoaded(false) // Reset para carregar dados após registro
+      } else {
+        const errorText = await res.text()
+        console.error('Erro do servidor:', res.status, errorText)
+        try {
+          const error = JSON.parse(errorText)
+          setMessage({ type:'error', text: error.message || 'Erro ao criar conta' })
+        } catch {
+          setMessage({ type:'error', text: `Erro ${res.status}: ${errorText || 'Erro ao criar conta'}` })
+        }
+      }
+    } catch(err) { 
+      console.error('Erro ao registrar', err)
+      setMessage({ type:'error', text: 'Erro ao conectar com o servidor. Verifique se o backend está rodando.' })
+    }
+  }
+
+  function doLogout(){ 
+    localStorage.removeItem('token')
+    localStorage.removeItem('usuario')
+    setAuthToken(null)
+    setUsuario(null)
+    setDataLoaded(false)
+    setMessage({ type:'success', text: 'Logout realizado' })
+  }
 
   function startEdit(p){
     setEditingId(p.id)
@@ -354,6 +672,69 @@ export default function App(){
   }
 
   function cancelEdit(){ setEditingId(null); setForm({ valor: '', descricao: '', transactionDate: '', clienteId: '', cartaoId: '' }) }
+
+  async function saveCliente(clienteData){
+    setLoading(true)
+    setMessage(null)
+    try{
+      const res = await fetch(`${API_BASE}/clientes`, { 
+        method: 'POST', 
+        headers: headers(), 
+        body: JSON.stringify(clienteData) 
+      })
+      if(res.ok){
+        setMessage({ type:'success', text: 'Cliente cadastrado com sucesso!' })
+        // Recarregar lista de clientes
+        const cRes = await fetch(`${API_BASE}/clientes`, { headers: headers() })
+        if(cRes.ok){
+          const c = await cRes.json()
+          setClientes(c)
+        }
+      }else{
+        const error = await res.json().catch(() => ({}))
+        setMessage({ type:'error', text: error.message || 'Erro ao cadastrar cliente' })
+      }
+    }catch(e){ 
+      console.error('Erro ao salvar cliente', e)
+      setMessage({ type:'error', text: 'Erro ao cadastrar cliente' }) 
+    }
+    setLoading(false)
+  }
+
+  async function saveCartao(cartaoData){
+    setLoading(true)
+    setMessage(null)
+    try{
+      const payload = {
+        numero: cartaoData.numero,
+        cvv: cartaoData.cvv,
+        tipoCartao: cartaoData.tipoCartao,
+        vencimento: cartaoData.vencimento,
+        clienteId: Number(cartaoData.clienteId)
+      }
+      const res = await fetch(`${API_BASE}/cartoes`, { 
+        method: 'POST', 
+        headers: headers(), 
+        body: JSON.stringify(payload) 
+      })
+      if(res.ok){
+        setMessage({ type:'success', text: 'Cartão cadastrado com sucesso!' })
+        // Recarregar lista de cartões
+        const kRes = await fetch(`${API_BASE}/cartoes`, { headers: headers() })
+        if(kRes.ok){
+          const k = await kRes.json()
+          setCartoes(k)
+        }
+      }else{
+        const error = await res.json().catch(() => ({}))
+        setMessage({ type:'error', text: error.message || 'Erro ao cadastrar cartão' })
+      }
+    }catch(e){ 
+      console.error('Erro ao salvar cartão', e)
+      setMessage({ type:'error', text: 'Erro ao cadastrar cartão' }) 
+    }
+    setLoading(false)
+  }
 
   function validate(){
     if(!form.valor || isNaN(parseFloat(form.valor)) || parseFloat(form.valor) <= 0) return 'Valor inválido'
@@ -514,7 +895,7 @@ export default function App(){
 
   return (
     <div>
-      {authHeader ? (
+      {authToken ? (
         <PaymentsScreen
           pagamentos={pagamentos}
           clientes={clientes}
@@ -524,6 +905,8 @@ export default function App(){
           onEdit={startEdit}
           onDelete={remove}
           onSave={save}
+          onSaveCliente={saveCliente}
+          onSaveCartao={saveCartao}
           form={form}
           setForm={setForm}
           loading={loading}
@@ -539,8 +922,18 @@ export default function App(){
           apiOffline={apiOffline}
           onRetry={fetchInitial}
         />
+      ) : screen === 'register' ? (
+        <RegisterScreen 
+          onRegister={doRegister} 
+          onSwitchToLogin={() => setScreen('login')}
+          error={message && message.type === 'error' ? message.text : null} 
+        />
       ) : (
-        <LoginScreen onLogin={doLogin} error={message && message.type === 'error' ? message.text : null} />
+        <LoginScreen 
+          onLogin={doLogin} 
+          onSwitchToRegister={() => setScreen('register')}
+          error={message && message.type === 'error' ? message.text : null} 
+        />
       )}
     </div>
   )

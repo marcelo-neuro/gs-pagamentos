@@ -25,8 +25,8 @@ public class CartaoDTO {
     @NotBlank(message = "O campo \"numero\" é obrigatório.")
     @Schema(description = "Número do cartão")
     private String numero;
-    @Size(min = 16 , max = 20, message = "O numero do cartão deve conter entre 16 e 20 caracteres.")
-    @NotBlank(message = "O campo \"numero\" é obrigatório.")
+    @Size(min = 3 , max = 4, message = "O CVV deve conter entre 3 e 4 caracteres.")
+    @NotBlank(message = "O campo \"cvv\" é obrigatório.")
     @Schema(description = "Valor de identificação do cartão")
     private String cvv;
     @Enumerated(EnumType.STRING)

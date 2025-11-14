@@ -1,20 +1,58 @@
-<div class="principal">
-  <div class="modal">
-    <div class="title">
-        <h1>Login</h1>
+<div class="login-container">
+  <div class="login-card">
+    <div class="login-header">
+      <h1>SmartSector</h1>
+      <p>Sistema de Análise Inteligente por Setor</p>
     </div>
-    <div class="forms">
-        <p *ngIf="invalido">Usuario ou Senha Invalida</p>
-        <div class="form">
-            <label for="">Usuario:</label>
-            <input type="text" [(ngModel)]="username">
+
+    <form (ngSubmit)="login()" class="login-form">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input
+          type="email"
+          id="email"
+          [(ngModel)]="credenciais.email"
+          name="email"
+          placeholder="seu@email.com"
+          [disabled]="carregando"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="senha">Senha</label>
+        <input
+          type="password"
+          id="senha"
+          [(ngModel)]="credenciais.senha"
+          name="senha"
+          placeholder="••••••••"
+          [disabled]="carregando"
+          required
+        />
+      </div>
+
+      @if (erro) {
+        <div class="error-message">
+          {{ erro }}
         </div>
-        <div class="form">
-            <label for="">Senha:</label>
-            <input type="password" [(ngModel)]="password">
-        </div>
-        
-        <button class="btnLogin" (click)="login()">Entrar</button>
-    </div>
+      }
+
+      <button 
+        type="submit" 
+        class="btn-login"
+        [disabled]="carregando"
+      >
+        @if (carregando) {
+          <span>Entrando...</span>
+        } @else {
+          <span>Entrar</span>
+        }
+      </button>
+
+      <div class="login-footer">
+        <p>Não tem uma conta? <a routerLink="/registro">Cadastre-se</a></p>
+      </div>
+    </form>
   </div>
 </div>

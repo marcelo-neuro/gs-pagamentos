@@ -1,22 +1,39 @@
 <nav>
-  <ul>
-    <li routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-      <a routerLink="/home">
-        <p class="icon">🏠</p>
-        Home
-      </a>
-    </li>
-    <li routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-      <a routerLink="/pessoal">
-        <p class="icon">👤</p>
-        Pessoal
-      </a>
-    </li>
-    <li routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-      <a routerLink="/transacoes">
-        <p class="icon">🏃‍♂️‍➡️</p>
-        Menu
-      </a>
-    </li>
-  </ul>
+  <div class="nav-content">
+    <div class="nav-brand">
+      <h2>SmartSector</h2>
+    </div>
+    
+    <ul class="nav-links">
+      <li routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+        <a routerLink="/home">
+          <p class="icon">🏠</p>
+          Home
+        </a>
+      </li>
+      <li routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+        <a routerLink="/pessoal">
+          <p class="icon">👤</p>
+          Pessoal
+        </a>
+      </li>
+      <li routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+        <a routerLink="/transacoes">
+          <p class="icon">🏃‍♂️‍➡️</p>
+          Menu
+        </a>
+      </li>
+    </ul>
+
+    <div class="nav-user" *ngIf="usuario">
+      <div class="user-info">
+        <p class="user-name">{{ usuario.nome }}</p>
+        <p class="user-setor">{{ usuario.setor }} - {{ usuario.empresa }}</p>
+      </div>
+      <button class="btn-logout" (click)="logout()">
+        <span class="icon">🚪</span>
+        Sair
+      </button>
+    </div>
+  </div>
 </nav>

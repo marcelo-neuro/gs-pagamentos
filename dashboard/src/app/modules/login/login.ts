@@ -1,43 +1,57 @@
 import { Component } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { AppModule } from '../../app';
-import { Router } from '@angular/router';
-import { LoginService } from '../../services/login/login';
 import { CommonModule } from '@angular/common';
-
+import { FormsModule } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
+import { AuthService, LoginDTO } from '../../services/auth/auth';
 
 @Component({
   selector: 'app-login',
-  imports: [FormsModule, CommonModule],
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './login.html',
-  styleUrl: './login.less',
+  styleUrls: ['./login.less']
 })
 export class LoginComponent {
-  constructor(private loginService: LoginService, public global: AppModule, private router: Router) {}
-  
-  username = '';
-  password = '';
-  message = { type: '', text: '' };
+  credenciais: LoginDTO = {
+    email: '',
+    senha: ''
+  };
 
-  invalido: boolean = false
-  
-  ngOnInit() {}
-  
+  erro: string = '';
+  carregando: boolean = false;
 
-  login() {
-    if (!this.username || !this.password) {
-      this.message = { type: 'error', text: 'Informe usuário e senha' };
+  constructor(
+    private authService: AuthService,
+    private router: Router
+  ) {
+    // Se já estiver autenticado, redirecionar para home
+    if (this.authService.isAuthenticated()) {
+      this.router.navigate(['/home']);
+    }
+  }
+
+  login(): void {
+    if (!this.credenciais.email || !this.credenciais.senha) {
+      this.erro = 'Por favor, preencha todos os campos';
       return;
     }
 
-    this.loginService.validateCredentials(this.username, this.password).subscribe({
+    this.erro = '';
+    this.carregando = true;
+
+    this.authService.login(this.credenciais).subscribe({
       next: () => {
-        this.global.logou = true
-        this.router.navigate(["/home"])
+        this.router.navigate(['/home']);
       },
-      error: () => {
-        this.invalido = true
-      },
+      error: (err) => {
+        console.error('Erro no login:', err);
+        if (err.status === 401) {
+          this.erro = 'Email ou senha inválidos';
+        } else {
+          this.erro = 'Erro ao fazer login. Tente novamente.';
+        }
+        this.carregando = false;
+      }
     });
   }
 }

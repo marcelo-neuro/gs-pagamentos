@@ -26,4 +26,8 @@ public class Cliente {
     private String telefone;
     @Column(name = "valor_medio_pagamento")
     private Double valorMedioCompra; // Futuramente pode ser movido para uma tabela de estatisticas;
+
+    @ManyToOne
+    @JoinColumn(name = "id_usuario")
+    private Usuario usuario;
 }

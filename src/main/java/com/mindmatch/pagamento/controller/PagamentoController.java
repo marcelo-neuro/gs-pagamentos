@@ -4,6 +4,7 @@ package com.mindmatch.pagamento.controller;
 import com.mindmatch.pagamento.dto.CartaoDTO;
 import com.mindmatch.pagamento.dto.FormDTO;
 import com.mindmatch.pagamento.dto.PagamentoDTO;
+import com.mindmatch.pagamento.dto.PagamentoViewDTO;
 import com.mindmatch.pagamento.service.PagamentoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -29,14 +30,14 @@ public class PagamentoController {
 
     @Operation(
             description = "Listar pagamentos",
-            summary = "Retorna uma lista com todos os pagamentos registrados.",
+            summary = "Retorna uma lista com todos os pagamentos registrados com dados do cliente.",
             responses = {
                     @ApiResponse(description = "Ok", responseCode = "200")
             }
     )
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<List<PagamentoDTO>>getAll(){
-        List<PagamentoDTO>dto = service.getAll();
+    public ResponseEntity<List<PagamentoViewDTO>>getAll(){
+        List<PagamentoViewDTO>dto = service.getAllWithClientData();
         return ResponseEntity.ok(dto);
     }
 

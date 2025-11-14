@@ -1,6 +1,7 @@
 package com.mindmatch.pagamento.service;
 
 import com.mindmatch.pagamento.dto.PagamentoDTO;
+import com.mindmatch.pagamento.dto.PagamentoViewDTO;
 import com.mindmatch.pagamento.entities.Cartao;
 import com.mindmatch.pagamento.entities.Cliente;
 import com.mindmatch.pagamento.entities.Pagamento;
@@ -28,6 +29,13 @@ public class PagamentoService {
     public List<PagamentoDTO> getAll(){
         List<Pagamento>pagamentos = repository.findAll();
         return pagamentos.stream().map(PagamentoDTO::new)
+                .toList();
+    }
+
+    @Transactional(readOnly=true)
+    public List<PagamentoViewDTO> getAllWithClientData(){
+        List<Pagamento>pagamentos = repository.findAll();
+        return pagamentos.stream().map(PagamentoViewDTO::new)
                 .toList();
     }
 

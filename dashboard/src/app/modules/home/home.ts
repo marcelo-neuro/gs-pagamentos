@@ -2,10 +2,11 @@ import { Component, inject } from '@angular/core';
 import { CardComponent } from './components/card/card';
 import { CommonModule } from '@angular/common';
 import { HomeService } from '../../services/home/home';
-import { Pessoal } from '../pessoal/models/pessoal.interface';
+import { Pessoal, PagamentoView } from '../pessoal/models/pessoal.interface';
 import { AppModule } from '../../app';
 import { Router } from '@angular/router';
 import { DashboardContextService } from '../../services/chatbot/dashboard-context.service';
+import { AuthService } from '../../services/auth/auth';
 
 @Component({
   selector: 'dash-home',
@@ -16,22 +17,22 @@ import { DashboardContextService } from '../../services/chatbot/dashboard-contex
 export class HomeComponet {
   private dashboardContext = inject(DashboardContextService);
   
-  constructor(private homeService: HomeService, public global: AppModule, private router: Router) {}
+  constructor(
+    private homeService: HomeService, 
+    public global: AppModule, 
+    private router: Router,
+    private authService: AuthService
+  ) {}
 
   ngOnInit() {
-    if (this.global.logou == true) {
+    if (this.authService.isAuthenticated()) {
       this.obterDados();
-      this.obterCartoes();
-      this.obterNomes();
     } else {
-      this.router.navigate(['']);
+      this.router.navigate(['/login']);
     }
   }
 
   pessoal: any[] = [];
-  cartoes: any = [];
-  listaDados: any[] = [];
-  nomes: any = []
   listaTransRecentes: any = []
 
   transRecente: number = 0;
@@ -40,88 +41,34 @@ export class HomeComponet {
   totalTransacoesFeitas: number = 0;
 
   async obterDados() {
-    await this.homeService.obterDados().subscribe({
-      next: (dados) => {
+    this.homeService.obterDados().subscribe({
+      next: (dados: PagamentoView[]) => {
         this.pessoal = dados;
 
         this.totalTransacoesFeitas = this.pessoal.length;
-        this.maiorTransacao = this.pessoal[1].valor;
+        this.maiorTransacao = this.pessoal[1]?.valor || 0;
 
         const maisRecente = this.pessoal.reduce((maisNova, atual) =>
           new Date(atual.dataTransacao) > new Date(maisNova.dataTransacao) ? atual : maisNova
         );
 
-        this.transRecente = maisRecente.valor;
-        // (this.pessoal);
+        this.transRecente = maisRecente?.valor || 0;
 
         for (let i = 0; i < this.pessoal.length; i++) {
-          // (this.pessoal[i]);
           this.totalTransacoes += this.pessoal[i].valor;
 
           if (this.maiorTransacao < this.pessoal[i].valor) {
             this.maiorTransacao = this.pessoal[i].valor;
           }
-
-          // this.pessoal[i].transactionDate = formatarData(this.pessoal[i].transactionDate);
         }
-        this.juntarDados();
+        
         this.listarTransRecentes();
-        this.updateDashboardContext(); // Atualizar contexto para a Luma
+        this.updateDashboardContext();
       },
       error: (erro) => {
         console.error('Erro ao buscar dados:', erro);
       },
     });
-  }
-
-  async obterCartoes() {
-    await this.homeService.obterDadosCartao().subscribe({
-      next: (dados) => {
-        this.cartoes = dados;
-      },
-    });
-  }
-  async obterNomes() {
-    await this.homeService.obterDadosNomes().subscribe({
-      next: (dados) => {
-        this.nomes = dados;
-      },
-    });
-  }
-
-  async juntarDados() {
-    // (this.nomes);
-    // (this.cartoes);
-    (this.pessoal);
-
-    for (let i = 0; i < this.nomes.length; i++) {
-
-      let listaCompras = []
-      for(let j=0; j<this.pessoal.length; j++){
-        if(this.pessoal[j].clienteId === this.nomes[i].id){
-          listaCompras.push(this.pessoal[j])
-        }
-      }
-
-      let listaCartoes = []
-      for(let l = 0; l<this.cartoes.length; l++){
-        if(this.cartoes[l].clienteId === this.nomes[i].id){
-          listaCartoes.push(this.cartoes[l])
-        }
-      }
-
-      this.listaDados.push({
-        id: this.nomes[i].id,
-        nome: this.nomes[i].nome,
-        email: this.nomes[i].email,
-        telefone: this.nomes[i].telefone,
-        valorMedioCompra: this.nomes[i].valorMedioCompra,
-        cartoes: listaCartoes,
-        transacoes: listaCompras
-      });
-    }
-    // (this.listaDados);
-    this.global.listaDados = this.listaDados
   }
 
   public selecionarUsuario(id:number, telefone: string, email: string, idPagamento: number) {
@@ -135,51 +82,18 @@ export class HomeComponet {
   }
 
   async listarTransRecentes(){
+    this.listaTransRecentes = this.pessoal.map((pagamento: PagamentoView) => ({
+      id: pagamento.id,
+      valor: pagamento.valor,
+      dataTransacao: this.formatDateToBR(pagamento.dataTransacao),
+      descricao: pagamento.descricao,
+      nome: pagamento.nomeCliente,
+      telefone: pagamento.telefoneCliente,
+      email: pagamento.emailCliente,
+      idCliente: pagamento.clienteId
+    }));
     
-    for(let i=0; i<this.pessoal.length; i++){
-      // (this.pessoal[i]);
-
-      let objNome = {}
-      let objCartao = {}
-      let transacao = {}
-
-      transacao = {
-        id: this.pessoal[i].id,
-        valor: this.pessoal[i].valor,
-        dataTransacao: this.formatDateToBR(this.pessoal[i].dataTransacao),
-      }
-
-
-      for(let l=0; l<this.nomes.length; l++){
-        if(this.pessoal[i].clienteId === this.nomes[l].id){
-          objNome = {
-            nome: this.nomes[l].nome,
-            telefone: this.nomes[l].telefone,
-            email: this.nomes[l].email,
-            idCliente: this.nomes[l].id
-          }
-        }
-      }
-
-      for(let j=0; j<this.cartoes.length; j++){
-        if(this.pessoal[i].cartaoId === this.cartoes[j].id){
-          objCartao = {
-            nCartao: this.cartoes[j].numero,
-            cvv: this.cartoes[j].cvv,
-            tpCartao: this.cartoes[j].tipoCartao,
-            vencimento: this.formatarData(this.cartoes[j].vencimento)
-          }
-        }
-      }
-
-      Object.assign(transacao, objNome);
-      Object.assign(transacao, objCartao);
-      
-
-      this.listaTransRecentes.push(transacao)
-    }
     console.log(this.listaTransRecentes);
-    
   }
 
   public formatarParaReal(valor: number): string {
@@ -217,8 +131,21 @@ export class HomeComponet {
     // Atualizar transações
     this.dashboardContext.updateTransactions(this.listaTransRecentes);
 
-    // Atualizar clientes
-    this.dashboardContext.updateClients(this.listaDados);
+    // Atualizar clientes (agrupados por clienteId)
+    const clientesUnicos = this.listaTransRecentes.reduce((acc: any[], trans: any) => {
+      if (!acc.find((c: any) => c.id === trans.idCliente)) {
+        acc.push({
+          id: trans.idCliente,
+          nome: trans.nome,
+          email: trans.email,
+          telefone: trans.telefone,
+          transacoes: this.listaTransRecentes.filter((t: any) => t.idCliente === trans.idCliente)
+        });
+      }
+      return acc;
+    }, []);
+    
+    this.dashboardContext.updateClients(clientesUnicos);
   }
 }
 

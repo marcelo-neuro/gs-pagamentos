@@ -9,3 +9,15 @@ export interface Pessoal {
   valor: number;
   descricao: string;
 }
+
+export interface PagamentoView {
+  id: number;
+  valor: number;
+  dataTransacao: string;
+  descricao: string;
+  nomeCliente: string;
+  emailCliente: string;
+  telefoneCliente: string;
+  clienteId: number;
+  cartaoId: number;
+}

@@ -24,8 +24,10 @@ function getEnvVariable(key: string): string {
   providedIn: 'root'
 })
 export class LumaService {
-  private readonly GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent';
-  private readonly API_KEY = getEnvVariable('VITE_GEMINI_API_KEY') || 'AIzaSyAMWFTeiS62Qk5lKrYGB4y9qjPfSehEJc8';
+  private readonly GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-latest:generateContent';
+  // Chave da API do Google AI Studio
+  // Para produção, mova para environment.ts
+  private readonly API_KEY = 'AIzaSyBIRcrtcjzAOA2xm3_OV_dSo5BLgHdB-Dc';
   
   private chatHistorySubject = new BehaviorSubject<ChatMessage[]>([]);
   public chatHistory$ = this.chatHistorySubject.asObservable();
@@ -83,6 +85,17 @@ export class LumaService {
     const currentHistory = this.chatHistorySubject.value;
     this.chatHistorySubject.next([...currentHistory, userChatMessage]);
 
+    // Verificar se a chave está configurada
+    if (!this.API_KEY || this.API_KEY.length < 30) {
+      const errorMessage: ChatMessage = {
+        role: 'assistant',
+        content: '⚠️ A Luma precisa de uma chave válida da API do Google Gemini.\n\nPara ativá-la:\n1. Acesse https://aistudio.google.com/apikey\n2. Gere uma nova chave gratuita\n3. Configure em luma.service.ts',
+        timestamp: new Date()
+      };
+      this.chatHistorySubject.next([...this.chatHistorySubject.value, errorMessage]);
+      return of(errorMessage);
+    }
+
     // Adicionar contexto do dashboard automaticamente
     const dashboardContext = this.dashboardContext.getFormattedContext();
     const enhancedContextData = {
@@ -109,7 +122,7 @@ export class LumaService {
         console.error('Erro ao comunicar com Luma:', error);
         const errorMessage: ChatMessage = {
           role: 'assistant',
-          content: 'Desculpe, estou tendo dificuldades para processar sua mensagem. Pode tentar novamente?',
+          content: '⚠️ A chave da API do Gemini está inválida ou expirada.\n\nGere uma nova em: https://aistudio.google.com/apikey',
           timestamp: new Date()
         };
         

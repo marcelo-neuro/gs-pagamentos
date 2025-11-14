@@ -5,6 +5,7 @@ import { PessoalService } from '../../services/pessoal/pessoal';
 import { Pessoal } from './models/pessoal.interface';
 import { AppModule } from '../../app';
 import { Router } from '@angular/router';
+import { AuthService } from '../../services/auth/auth';
 
 @Component({
   selector: 'app-pessoal',
@@ -17,11 +18,12 @@ export class PessoalComponent {
   constructor(
     private pessoalService: PessoalService,
     public global: AppModule,
-    private router: Router
+    private router: Router,
+    private authService: AuthService
   ) {}
 
   ngOnInit() {
-    if (this.global.logou == true) {
+    if (this.authService.isAuthenticated()) {
       if (this.global.selecionou) {
         this.telefone = this.global.telefone;
         this.email = this.global.email;
@@ -29,7 +31,7 @@ export class PessoalComponent {
         this.filtrarDados(this.global.idCliente);
       }
     } else {
-      this.router.navigate(['']);
+      this.router.navigate(['/login']);
     }
   }
 

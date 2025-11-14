@@ -34,4 +34,8 @@ public class Pagamento {
     @ManyToOne
     @JoinColumn(name = "id_cartao")
     private Cartao cartao;
+
+    @ManyToOne
+    @JoinColumn(name = "id_usuario")
+    private Usuario usuario;
 }

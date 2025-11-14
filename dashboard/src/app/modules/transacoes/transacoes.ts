@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { AppModule } from '../../app';
+import { AuthService } from '../../services/auth/auth';
 
 @Component({
   selector: 'app-transacoes',
@@ -9,10 +10,14 @@ import { AppModule } from '../../app';
   styleUrl: './transacoes.less'
 })
 export class TransacoesComponent {
-  constructor(private router: Router, public global: AppModule){}
+  constructor(
+    private router: Router, 
+    public global: AppModule,
+    private authService: AuthService
+  ){}
 
   ngOnInit(){
-    if(this.global.logou == false){
+    if(!this.authService.isAuthenticated()){
       this.deslogar()
     }
   }
@@ -22,7 +27,6 @@ export class TransacoesComponent {
   }
 
   deslogar(){
-    this.global.logou = false
-    this.router.navigate([""])
+    this.authService.logout()
   }
 }

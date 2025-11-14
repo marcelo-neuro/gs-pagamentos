@@ -1,0 +1,125 @@
+<div class="registro-container">
+  <div class="registro-card">
+    <div class="registro-header">
+      <h1>SmartSector</h1>
+      <p>Crie sua conta e comece a analisar seus dados</p>
+    </div>
+
+    <form (ngSubmit)="registrar()" class="registro-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="nome">Nome Completo</label>
+          <input
+            type="text"
+            id="nome"
+            [(ngModel)]="dados.nome"
+            name="nome"
+            placeholder="Seu nome"
+            [disabled]="carregando"
+            required
+          />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input
+            type="email"
+            id="email"
+            [(ngModel)]="dados.email"
+            name="email"
+            placeholder="seu@email.com"
+            [disabled]="carregando"
+            required
+          />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="empresa">Empresa</label>
+          <input
+            type="text"
+            id="empresa"
+            [(ngModel)]="dados.empresa"
+            name="empresa"
+            placeholder="Nome da sua empresa"
+            [disabled]="carregando"
+            required
+          />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="setor">Setor</label>
+          <select
+            id="setor"
+            [(ngModel)]="dados.setor"
+            name="setor"
+            [disabled]="carregando"
+            required
+          >
+            <option value="">Selecione seu setor</option>
+            @for (setor of setoresDisponiveis; track setor) {
+              <option [value]="setor">{{ setor }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="senha">Senha</label>
+          <input
+            type="password"
+            id="senha"
+            [(ngModel)]="dados.senha"
+            name="senha"
+            placeholder="Mínimo 6 caracteres"
+            [disabled]="carregando"
+            required
+          />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="confirmarSenha">Confirmar Senha</label>
+          <input
+            type="password"
+            id="confirmarSenha"
+            [(ngModel)]="confirmarSenha"
+            name="confirmarSenha"
+            placeholder="Digite a senha novamente"
+            [disabled]="carregando"
+            required
+          />
+        </div>
+      </div>
+
+      @if (erro) {
+        <div class="error-message">
+          {{ erro }}
+        </div>
+      }
+
+      <button 
+        type="submit" 
+        class="btn-registro"
+        [disabled]="carregando"
+      >
+        @if (carregando) {
+          <span>Criando conta...</span>
+        } @else {
+          <span>Criar Conta</span>
+        }
+      </button>
+
+      <div class="registro-footer">
+        <p>Já tem uma conta? <a routerLink="/login">Entrar</a></p>
+      </div>
+    </form>
+  </div>
+</div>
