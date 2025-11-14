@@ -1,185 +1,336 @@
-# 💳 Sistema de Pagamentos - MindMatch
+# 🚀 SmartSector - Sistema Multi-Tenant de Pagamentos com IA
 
-Sistema completo para gerenciamento de pagamentos com indicadores avançados, desenvolvido em **Spring Boot + Oracle PL/SQL + React Mobile**.
+Sistema completo de gerenciamento de pagamentos com **autenticação JWT**, **arquitetura multi-tenant** e **assistente virtual com IA (Luma)**, desenvolvido em **Spring Boot + Angular + React**.
 
-## 🎯 Visão Geral
+## 🎯 Visão Geral do Projeto
 
-- **Backend:** API REST em Spring Boot com integração Oracle PL/SQL
-- **Frontend Mobile:** App React/Vite responsivo para gestão e consulta
-- **Dashboard:** Angular (projeto separado em `dashboard/`)
-- **Banco:** Oracle (produção) + H2 (desenvolvimento)
-- **Indicadores:** Functions e Procedures PL/SQL integradas via endpoints REST
+**SmartSector** é uma plataforma moderna de pagamentos que permite múltiplas empresas gerenciarem suas transações de forma isolada e segura, com integração de inteligência artificial para análise contextualizada.
 
-## Novidades da Fase 6 (Oracle + PL/SQL)
+### 🔐 Principais Recursos Implementados
 
-- Script com Functions e Procedures Oracle: `sql/scripts/oracle_plsql_objects.sql`
-  - Tabela auxiliar `TB_ALERTA` (persistência de alertas)
-  - Function `FN_TICKET_MEDIO_CLIENTE(p_id_cliente)` → retorna ticket médio (NUMBER)
-  - Function `FN_DESCRICAO_PAGAMENTO(p_id_pagamento)` → retorna descrição formatada (VARCHAR2)
-  - Procedure `PRC_REGISTRAR_ALERTAS(p_limite IN, o_qtd OUT)` → gera alertas para pagamentos acima do limite
-  - Procedure `PRC_RELATORIO_CONSUMO_CLIENTE(p_id_cliente IN, o_cursor OUT SYS_REFCURSOR)` → consumo mensal por cliente
-  - Procedure `PRC_LISTAR_ALERTAS(o_cursor OUT SYS_REFCURSOR)` → lista alertas
+✅ **Autenticação JWT completa**
+- Login e registro de usuários com BCrypt
+- Tokens JWT com expiração de 24h
+- Middleware de autenticação em todas as rotas protegidas
+- Interceptors automáticos (Angular e React)
 
-### Como aplicar no Oracle
+✅ **Arquitetura Multi-Tenant**
+- Cada usuário registrado representa uma empresa/setor
+- Isolamento total de dados entre tenants (por `usuarioId`)
+- Cliente, Cartão e Pagamento vinculados ao usuário autenticado
 
-1. Conecte no Oracle com o usuário do seu schema (o mesmo de `ORACLE_USER`).
-2. Execute os scripts de schema/dados (se necessário):
-   - `sql/scripts/pagamento_create.sql`
-   - `sql/scripts/pagamento_import.sql`
-3. Execute o script das rotinas PL/SQL:
-   - `sql/scripts/oracle_plsql_objects.sql`
+✅ **API REST Enriquecida**
+- **PagamentoViewDTO**: Endpoint `/pagamentos` retorna dados completos (nome, email, telefone do cliente + descrição)
+- Eliminação de múltiplas requisições no frontend (3 → 1)
+- Validações robustas com Jakarta Bean Validation
 
-### Integração Java (visual e direta)
+✅ **Assistente Virtual Luma (IA)**
+- Integração com Google Gemini 2.5 Flash
+- Contexto em tempo real do dashboard (transações, clientes, estatísticas)
+- Consultas em linguagem natural sobre dados financeiros
+- Análises e insights personalizados por empresa/setor
 
-Foram criados:
-- Repositório `IndicadoresRepository` com `JdbcTemplate`/`SimpleJdbcCall` chamando as rotinas.
-- Serviço `IndicadoresService` encapsula as chamadas.
-- Controller `IndicadoresController` expõe endpoints REST:
-  - `GET /indicadores/ticket-medio/{clienteId}` → chama `FN_TICKET_MEDIO_CLIENTE`
-  - `GET /indicadores/descricao-pagamento/{pagamentoId}` → chama `FN_DESCRICAO_PAGAMENTO`
-  - `POST /indicadores/registrar-alertas?limite=100.0` → chama `PRC_REGISTRAR_ALERTAS`
-  - `GET /indicadores/relatorio-consumo/{clienteId}` → chama `PRC_RELATORIO_CONSUMO_CLIENTE` (REF CURSOR)
-  - `GET /indicadores/alertas` → chama `PRC_LISTAR_ALERTAS` (REF CURSOR)
+✅ **Dashboards Completos**
+- **Angular Dashboard**: Visualização desktop com gráficos e tabelas
+- **React Mobile**: App responsivo com cadastro de clientes e cartões
+- Sincronização automática entre plataformas via JWT compartilhado
+
+## 🆕 Novidades da Última Entrega
+
+### Backend (Spring Boot)
+
+#### 1. Sistema de Autenticação JWT
+```java
+// Entidade Usuario com UserDetails
+@Entity
+public class Usuario implements UserDetails {
+    private String nome;
+    private String email;
+    private String senha; // BCrypt
+    private String empresa;
+    private String setor;
+    private LocalDateTime dataCadastro;
+    private Boolean ativo;
+}
+```
+
+**Endpoints:**
+```http
+POST /auth/registro
+{
+  "nome": "João Silva",
+  "email": "joao@empresa.com",
+  "senha": "senha123",
+  "empresa": "TechCorp",
+  "setor": "TI"
+}
+
+POST /auth/login
+{
+  "email": "joao@empresa.com",
+  "senha": "senha123"
+}
+→ Retorna JWT + dados do usuário
+
+GET /auth/validate
+→ Valida token JWT atual
+```
+
+#### 2. Multi-Tenancy
+Todas as entidades principais foram vinculadas ao usuário:
+
+```java
+@Entity
+public class Pagamento {
+    @ManyToOne
+    private Usuario usuario; // Isolamento por tenant
+    // ... outros campos
+}
+```
+
+#### 3. PagamentoViewDTO
+Novo DTO que retorna **dados completos** em uma única chamada:
+
+```json
+{
+  "id": 1,
+  "valor": 579.56,
+  "dataTransacao": "2024-12-28T14:30:00",
+  "descricao": "Plano MindMatch Premium",
+  "nomeCliente": "Bruno Souza",
+  "emailCliente": "bruno.souza579@emailaleatorio.com",
+  "telefoneCliente": "(11) 998887304",
+  "clienteId": 1,
+  "cartaoId": 1
+}
+```
+
+**Antes:** 3 requisições (pagamentos, clientes, cartões)  
+**Agora:** 1 requisição com tudo
+
+#### 4. Segurança
+- **CORS** configurado para localhost:3000/4200/5173
+- **CSRF** desabilitado (API stateless)
+- **Sessions** stateless (JWT puro)
+- **BCryptPasswordEncoder** com salt automático
+- Logging detalhado de autenticação (SLF4J)
+
+### Frontend Angular (Dashboard)
+
+#### Novos Serviços e Guards
+```typescript
+// AuthService com JWT
+login(credenciais): Observable<AuthResponseDTO>
+registrar(dados): Observable<AuthResponseDTO>
+logout(): void
+isAuthenticated(): boolean
+getCurrentUser(): UsuarioInfo
+
+// AuthGuard protegendo rotas
+canActivate(): boolean
+
+// AuthInterceptor (HttpInterceptorFn)
+// Adiciona automaticamente: Authorization: Bearer {token}
+```
+
+#### Telas Implementadas
+- **Login** (`/login`): Autenticação com feedback visual
+- **Registro** (`/registro`): Cadastro com empresa/setor
+- **Dashboard** (`/`): Indicadores + tabela com dados completos
+- **Navbar**: Exibe nome, empresa, setor do usuário logado
+
+#### Luma - Assistente Virtual com IA
+```typescript
+// Integração Google Gemini 2.5 Flash
+sendMessage(userMessage: string): Observable<ChatMessage>
+
+// Métodos especializados
+searchClient(clientName: string)
+analyzeTransactionsByValue(min, max)
+getTopClients(limit: number)
+generateReport(data)
+```
+
+**Contexto Automático:**
+- Estatísticas em tempo real (transRecente, maiorTransacao, totalTransacoes)
+- Últimas 20 transações
+- Lista completa de clientes
+
+### Frontend React (Mobile)
+
+#### Telas Principais
+1. **LoginScreen**: Autenticação JWT
+2. **RegisterScreen**: Cadastro com nome, email, empresa, setor, senha
+3. **Tabs de Cadastro**:
+   - ➕ **Novo Cliente**: nome, email, telefone
+   - 💳 **Novo Cartão**: número, CVV, tipo, vencimento, clienteId
+   - 📊 **Indicadores**: Estatísticas e gráficos
+
+#### Recursos
+- `localStorage` para persistência de token/usuário
+- Estado `dataLoaded` para prevenir loops infinitos
+- Funções `saveCliente()` e `saveCartao()` com validação
+- Feedback visual de erros e sucessos
+
+## 🔧 Tecnologias Utilizadas
+
+### Backend
+- **Spring Boot 3.5.5** + Java 17
+- **Spring Security 6** com JWT
+- **JJWT 0.12.3** (io.jsonwebtoken)
+- **JPA/Hibernate** com Oracle/H2
+- **Jakarta Bean Validation**
+- **Lombok** (redução de boilerplate)
+
+### Frontend Dashboard (Angular)
+- **Angular 20.2.0** (standalone components)
+- **RxJS** para programação reativa
+- **HttpClient** com interceptors
+- **Google Gemini API** para IA
+
+### Frontend Mobile (React)
+- **React 18.2.0** + Hooks
+- **Vite** (build rápido)
+- **Fetch API** para requisições
+- **CSS moderno** responsivo
+
+### Banco de Dados
+- **Oracle** (produção) com PL/SQL
+- **H2** (desenvolvimento) com persistência em arquivo
+- **Hibernate** para ORM
 
 ## 🌐 API Endpoints Completa
 
-### Autenticação
+### Autenticação (Públicas)
 ```http
-GET /auth/validate
-Authorization: Basic <base64(username:password)>
+POST /auth/registro
+POST /auth/login
+GET  /auth/validate
 ```
 
-### CRUD Principal
+### CRUD Principal (Autenticadas - JWT)
 ```http
-GET    /pagamentos           # Listar todos os pagamentos
+GET    /pagamentos           # Lista com dados completos do cliente
 POST   /pagamentos           # Criar novo pagamento
 PUT    /pagamentos/{id}      # Atualizar pagamento
 DELETE /pagamentos/{id}      # Excluir pagamento
 
-GET    /clientes             # Listar todos os clientes  
-GET    /cartoes              # Listar todos os cartões
+GET    /clientes             # Listar clientes do usuário logado
+POST   /clientes             # Criar novo cliente
+GET    /clientes/{id}        # Buscar cliente por ID
+
+GET    /cartoes              # Listar cartões do usuário logado
+POST   /cartoes              # Criar novo cartão
+GET    /cartoes/{id}         # Buscar cartão por ID
 ```
 
 ### Indicadores Oracle (PL/SQL)
 ```http
 GET  /indicadores/ticket-medio/{clienteId}
-     # → FN_TICKET_MEDIO_CLIENTE
-     # Retorna: NUMBER (valor médio dos pagamentos)
-
 GET  /indicadores/descricao-pagamento/{pagamentoId}
-     # → FN_DESCRICAO_PAGAMENTO  
-     # Retorna: STRING (descrição formatada)
-
 POST /indicadores/registrar-alertas?limite={valor}
-     # → PRC_REGISTRAR_ALERTAS
-     # Retorna: NUMBER (quantidade de alertas gerados)
-
 GET  /indicadores/alertas
-     # → PRC_LISTAR_ALERTAS
-     # Retorna: ARRAY (lista de alertas com ID, valor, data, mensagem)
-
 GET  /indicadores/relatorio-consumo/{clienteId}
-     # → PRC_RELATORIO_CONSUMO_CLIENTE
-     # Retorna: ARRAY (resumo mensal: mês, quantidade, total)
 ```
 
-### Exemplos de Teste (curl)
+## 🚀 Como Executar
+
+### 1. Backend (Spring Boot)
+
+**Desenvolvimento (H2):**
 ```bash
-# Ticket médio do cliente 1
-curl http://localhost:8080/indicadores/ticket-medio/1
-
-# Descrição formatada do pagamento 10  
-curl http://localhost:8080/indicadores/descricao-pagamento/10
-
-# Registrar alertas para pagamentos > 200
-curl -X POST "http://localhost:8080/indicadores/registrar-alertas?limite=200"
-
-# Relatório de consumo do cliente 1 (por mês)
-curl http://localhost:8080/indicadores/relatorio-consumo/1
-
-# Listar alertas persistidos
-curl http://localhost:8080/indicadores/alertas
+cd entrega-6
+set SPRING_PROFILES_ACTIVE=test
+mvnw.cmd spring-boot:run
 ```
 
-### Observações de Segurança e CORS
-- Em desenvolvimento, CORS liberado em `Pagamentos`, `Clientes`, `Cartoes`, `Indicadores`.
-- Endpoints de PL/SQL estão públicos em dev; restrinja em produção conforme necessário.
-
-## Como Executar (geral)
-
-### Backend (Oracle)
-```
-ORACLE_USER=<usuario> ORACLE_PASSWORD=<senha> SPRING_PROFILES_ACTIVE=prod ./mvnw spring-boot:run
+**Produção (Oracle):**
+```bash
+set ORACLE_USER=seu_usuario
+set ORACLE_PASSWORD=sua_senha
+set SPRING_PROFILES_ACTIVE=prod
+mvnw.cmd spring-boot:run
 ```
 
-### Frontend Mobile (React/Vite)
-Veja documentação completa em: **[mobile/README.md](mobile/README.md)**
+**Usuário de teste (H2):**
+- Email: `luiz@email.com`
+- Senha: `123456`
 
-Execução rápida:
+### 2. Dashboard Angular
+```bash
+cd dashboard
+npm install
+ng serve --port 4200
+# Acesse: http://localhost:4200
+```
+
+**Configure a Luma (opcional):**
+1. Obtenha chave em: https://aistudio.google.com/apikey
+2. Edite `luma.service.ts` → `API_KEY`
+
+### 3. Mobile React
 ```bash
 cd mobile
 npm install
-npm run dev  # http://localhost:5174/
+npm run dev
+# Acesse: http://localhost:5173
 ```
-
-**Credenciais de teste:**
-- Admin: `admin` / `admin123` (criar/editar/excluir)
-- User: `user` / `user123` (somente leitura)
-
-**Indicadores Oracle:** Acesse a aba "Indicadores" na parte inferior da tela principal.
 
 ## 📁 Estrutura do Projeto
 
 ```
 entrega-6/
-├── README.md                    # Documentação principal
-├── pom.xml                      # Dependências Maven (Spring Boot)
-├── src/main/java/               # Código Java (API REST)
-│   └── com/mindmatch/pagamento/
-│       ├── controller/          # Controllers REST
-│       ├── service/             # Lógica de negócio  
-│       ├── repositories/        # Acesso a dados
-│       └── models/              # Entidades JPA
-├── src/main/resources/          # Configurações e dados
-│   ├── application*.properties  # Perfis (test=H2, prod=Oracle)
-│   └── import.sql              # Dados iniciais
-├── mobile/                      # App React/Vite
-│   ├── README.md               # Documentação do mobile
-│   ├── package.json            # Dependências npm
-│   └── src/                    # Código React
-├── dashboard/                   # Dashboard Angular (separado)
-│   └── ...                     # Projeto Angular independente
-└── sql/                        # Scripts de banco
-    ├── DER/                    # Diagramas ER
-    └── scripts/                # DDL, DML e PL/SQL
-        ├── pagamento_create.sql     # Schema
-        ├── pagamento_import.sql     # Dados exemplo
-        └── oracle_plsql_objects.sql # Functions/Procedures
+├── src/main/java/com/mindmatch/pagamento/
+│   ├── controller/
+│   │   ├── AuthController.java          # Login/Registro
+│   │   ├── PagamentoController.java     # CRUD com PagamentoViewDTO
+│   │   ├── ClienteController.java
+│   │   └── CartaoController.java
+│   ├── service/
+│   │   ├── PagamentoService.java        # getAllWithClientData()
+│   │   ├── CustomUserDetailsService.java
+│   │   └── ...
+│   ├── security/
+│   │   ├── JwtService.java              # Geração/validação JWT
+│   │   ├── JwtAuthenticationFilter.java # OncePerRequestFilter
+│   │   └── SecurityConfiguration.java   # Configuração Spring Security
+│   ├── entities/
+│   │   ├── Usuario.java                 # implements UserDetails
+│   │   ├── Pagamento.java               # @ManyToOne usuario
+│   │   ├── Cliente.java
+│   │   └── Cartao.java
+│   ├── dto/
+│   │   ├── PagamentoViewDTO.java        # DTO com dados do cliente
+│   │   ├── RegistroDTO.java
+│   │   └── AuthResponseDTO.java
+│   └── config/
+│       └── CorsConfig.java              # CORS localhost:3000/4200/5173
+├── dashboard/src/app/
+│   ├── modules/
+│   │   ├── login/                       # Tela de login
+│   │   ├── registro/                    # Tela de registro
+│   │   └── home/                        # Dashboard principal
+│   ├── services/
+│   │   ├── auth/auth.ts                 # AuthService
+│   │   ├── chatbot/luma.service.ts      # Integração Gemini
+│   │   └── chatbot/dashboard-context.ts
+│   ├── guards/
+│   │   └── auth.guard.ts                # Proteção de rotas
+│   └── interceptors/
+│       └── auth.interceptor.ts          # Adiciona JWT
+└── mobile/src/
+    └── App.jsx                          # App completo (Login + Cadastros)
 ```
 
-## 🗄️ Banco de Dados
+## 🎯 Diferenciais Técnicos
 
-### DER e Scripts
-- **DER:** Diagramas em `sql/DER/`
-- **DDL:** Schema em `sql/scripts/pagamento_create.sql`
-- **DML:** Dados de exemplo em `sql/scripts/pagamento_import.sql`  
-- **PL/SQL:** Rotinas Oracle em `sql/scripts/oracle_plsql_objects.sql`
-
-### Perfis de Banco
-- **Test Profile:** H2 em memória (desenvolvimento rápido)
-- **Prod Profile:** Oracle (produção com PL/SQL)
-
-## 🎯 Valor Agregado
-
-✅ **Interoperabilidade completa:** Mobile (React) ⇄ API (Spring) ⇄ Oracle (PL/SQL)
-
-✅ **Cálculos no banco:** Indicadores processados em PL/SQL (performance)
-
-✅ **Interface intuitiva:** App mobile responsivo com feedback visual
-
-✅ **Separação de responsabilidades:** Frontend, Backend, Database bem definidos
-
-✅ **Flexibilidade:** Funciona com H2 (dev) e Oracle (prod)
+✅ **Zero configuração manual de headers**: Interceptors automáticos  
+✅ **Isolamento total de dados**: Multi-tenancy nativo  
+✅ **Performance otimizada**: 1 requisição vs 3 anteriores  
+✅ **IA Contextualizada**: Luma analisa dados específicos do tenant  
+✅ **Segurança robusta**: JWT + BCrypt + validações  
+✅ **Banco persistente**: H2 em arquivo (dados não se perdem)  
+✅ **Cross-platform**: Mesmos dados em Angular e React
 
 
 
