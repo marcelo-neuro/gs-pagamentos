@@ -321,6 +321,9 @@ entrega-6/
 └── mobile/src/
     └── App.jsx                          # App completo (Login + Cadastros)
 ```
+<img width="602" height="440" alt="image" src="https://github.com/user-attachments/assets/3db82ac5-c0a4-47f5-83de-1f3384b87305" />
+
+
 
 ## 🎯 Diferenciais Técnicos
 
